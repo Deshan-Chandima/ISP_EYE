@@ -140,5 +140,3 @@ To capture metrics automatically every 30 minutes:
 
 ## 👨‍💻 Author
 **Deshan Chandima**
-
-*Part of a professional Data Engineering showcase portfolio.*
