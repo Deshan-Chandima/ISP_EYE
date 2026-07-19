@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { fetchCurrentStatus, fetchHistoricalData, fetchOutages, runSpeedTest, getExportUrl } from './api/fetch_data';
+import Sidebar from './components/Sidebar';
 import SpeedChart from './components/SpeedChart';
 import PingChart from './components/PingChart';
 import OutageLog from './components/OutageLog';
 import TrafficMonitor from './components/TrafficMonitor';
+import RecentTestsCard from './components/RecentTestsCard';
+import ServerInfoCard from './components/ServerInfoCard';
 import {
   Activity, Download, Upload, Clock, Wifi, WifiOff,
-  Play, Loader2, FileDown, Server, Zap
+  Play, Loader2, FileDown
 } from 'lucide-react';
 import './index.css';
 
@@ -135,126 +138,104 @@ function App() {
   const uptimePercent = totalTests > 0 ? Math.round(((totalTests - failedTests) / totalTests) * 100) : 100;
 
   return (
-    <div className="dashboard-container">
-      {/* Header */}
-      <header className="header">
-        <h1 className="title">ISP Eye</h1>
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          <button className="test-button" onClick={handleRunTest} disabled={isTesting}>
-            {isTesting ? (
-              <><Loader2 className="animate-spin" size={16} /> Testing...</>
-            ) : (
-              <><Play size={16} /> Run Test</>
-            )}
-          </button>
-          <a href={getExportUrl(selectedRange)} className="export-button" download>
-            <FileDown size={16} /> Export CSV
-          </a>
-          <div className="status-badge">
-            {isOnline ? <Wifi size={16} color="var(--success)" /> : <WifiOff size={16} color="var(--danger)" />}
-            <span style={{ color: isOnline ? 'var(--success)' : 'var(--danger)', fontSize: '0.9rem' }}>
-              {isOnline ? 'Online' : 'Offline'}
-            </span>
+    <div className="app-layout">
+      <Sidebar performanceRatio={performanceRatio} />
+      
+      <main className="main-content">
+        {/* Header / Topbar */}
+        <header className="topbar">
+          <div className="topbar-left">
+            <h1 className="title">Dashboard</h1>
+            <div className="status-badge">
+              <div className={`status-dot ${isOnline ? 'online' : 'offline'}`}></div>
+              <span style={{ color: isOnline ? 'var(--success)' : 'var(--danger)', fontSize: '0.9rem' }}>
+                {isOnline ? 'Online' : 'Offline'}
+              </span>
+            </div>
           </div>
-        </div>
-      </header>
+          <div className="topbar-actions">
+            <button className="test-button" onClick={handleRunTest} disabled={isTesting}>
+              {isTesting ? (
+                <><Loader2 className="animate-spin" size={16} /> Testing...</>
+              ) : (
+                <><Play size={16} /> Run Test</>
+              )}
+            </button>
+            <a href={getExportUrl(selectedRange)} className="export-button" download>
+              <FileDown size={16} /> Export CSV
+            </a>
+          </div>
+        </header>
 
-      {/* Date Range Filter */}
-      <div className="range-filter">
-        {RANGE_OPTIONS.map((opt) => (
-          <button
-            key={opt.hours}
-            className={`range-btn ${selectedRange === opt.hours ? 'active' : ''}`}
-            onClick={() => setSelectedRange(opt.hours)}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Server Info Bar */}
-      {currentStatus?.server_name && (
-        <div className="server-info-bar">
-          <span><Server size={14} /> <strong>Server:</strong> {currentStatus.server_name}</span>
-          <span>📍 {currentStatus.server_location}</span>
-          <span><Zap size={14} /> <strong>ISP:</strong> {currentStatus.isp_name || 'N/A'}</span>
-        </div>
-      )}
-
-      {/* KPI Cards */}
-      <div className="kpi-grid">
-        <div className="kpi-card">
-          <div className="kpi-title"><Download size={16} /> Download</div>
-          <div>
-            <span className="kpi-value">{currentStatus?.download_mbps || '—'}</span>
-            <span className="kpi-unit"> Mbps</span>
+        {/* Top Section: Server Info & Date Range */}
+        <div className="top-section">
+          <ServerInfoCard currentStatus={currentStatus} />
+          
+          <div className="range-filter">
+            {RANGE_OPTIONS.map((opt) => (
+              <button
+                key={opt.hours}
+                className={`range-btn ${selectedRange === opt.hours ? 'active' : ''}`}
+                onClick={() => setSelectedRange(opt.hours)}
+              >
+                {opt.label}
+              </button>
+            ))}
           </div>
         </div>
 
-        <div className="kpi-card">
-          <div className="kpi-title"><Upload size={16} /> Upload</div>
-          <div>
-            <span className="kpi-value">{currentStatus?.upload_mbps || '—'}</span>
-            <span className="kpi-unit"> Mbps</span>
+        {/* KPI Cards */}
+        <div className="kpi-grid">
+          <div className="kpi-card">
+            <div className="kpi-title"><Download size={16} /> Download</div>
+            <div>
+              <span className="kpi-value">{currentStatus?.download_mbps || '—'}</span>
+              <span className="kpi-unit"> Mbps</span>
+            </div>
+          </div>
+
+          <div className="kpi-card">
+            <div className="kpi-title"><Upload size={16} /> Upload</div>
+            <div>
+              <span className="kpi-value">{currentStatus?.upload_mbps || '—'}</span>
+              <span className="kpi-unit"> Mbps</span>
+            </div>
+          </div>
+
+          <div className="kpi-card">
+            <div className="kpi-title"><Clock size={16} /> Latency</div>
+            <div>
+              <span className="kpi-value">{currentStatus?.latency_ms || '—'}</span>
+              <span className="kpi-unit"> ms</span>
+            </div>
+          </div>
+
+          <div className="kpi-card">
+            <div className="kpi-title"><Activity size={16} /> Jitter</div>
+            <div>
+              <span className="kpi-value">{currentStatus?.jitter_ms || '—'}</span>
+              <span className="kpi-unit"> ms</span>
+            </div>
           </div>
         </div>
 
-        <div className="kpi-card">
-          <div className="kpi-title"><Clock size={16} /> Latency</div>
-          <div>
-            <span className="kpi-value">{currentStatus?.latency_ms || '—'}</span>
-            <span className="kpi-unit"> ms</span>
+        {/* Charts & Recent Tests Grid */}
+        <div className="middle-grid">
+          <div className="charts-column">
+            <SpeedChart data={historicalData?.raw_data || []} />
+            <PingChart data={historicalData?.raw_data || []} />
+          </div>
+          <div className="side-column">
+            <RecentTestsCard data={historicalData?.raw_data || []} />
           </div>
         </div>
 
-        <div className="kpi-card">
-          <div className="kpi-title"><Activity size={16} /> Jitter</div>
-          <div>
-            <span className="kpi-value">{currentStatus?.jitter_ms || '—'}</span>
-            <span className="kpi-unit"> ms</span>
-          </div>
+        {/* Real-Time Traffic & Outage Log */}
+        <div className="bottom-grid">
+          <TrafficMonitor />
+          <OutageLog outages={outages} />
         </div>
-
-        <div className="kpi-card">
-          <div className="kpi-title"><Activity size={16} /> Performance</div>
-          <div>
-            <span className="kpi-value" style={{
-              color: performanceRatio >= 90 ? 'var(--success)' : performanceRatio >= 70 ? 'var(--warning)' : 'var(--danger)',
-              WebkitTextFillColor: performanceRatio >= 90 ? 'var(--success)' : performanceRatio >= 70 ? 'var(--warning)' : 'var(--danger)',
-              background: 'none'
-            }}>
-              {performanceRatio || '—'}
-            </span>
-            <span className="kpi-unit">%</span>
-          </div>
-        </div>
-
-        <div className="kpi-card">
-          <div className="kpi-title"><Wifi size={16} /> Uptime</div>
-          <div>
-            <span className="kpi-value" style={{
-              color: uptimePercent >= 99 ? 'var(--success)' : uptimePercent >= 95 ? 'var(--warning)' : 'var(--danger)',
-              WebkitTextFillColor: uptimePercent >= 99 ? 'var(--success)' : uptimePercent >= 95 ? 'var(--warning)' : 'var(--danger)',
-              background: 'none'
-            }}>
-              {uptimePercent}
-            </span>
-            <span className="kpi-unit">%</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Charts */}
-      <div className="charts-grid">
-        <SpeedChart data={historicalData?.raw_data || []} />
-        <PingChart data={historicalData?.raw_data || []} />
-      </div>
-
-      {/* Real-Time Traffic & Outage Log */}
-      <div className="bottom-grid">
-        <TrafficMonitor />
-        <OutageLog outages={outages} />
-      </div>
+      </main>
     </div>
   );
 }
